@@ -6,11 +6,11 @@ class NitroCli < Formula
 
   on_macos do
     if Hardware::CPU.arm?
-      url "https://github.com/ChilliCream/graphql-platform/releases/download/16.0.0-p.8.6/nitro-osx-arm64.zip"
-      sha256 "c5333668bd2af46e86b953a87a214499a39339dfac519cc4b7b3b7cdabe2cf63"
+      url "https://github.com/ChilliCream/graphql-platform/releases/download/16.0.0-p.8.7/nitro-osx-arm64.zip"
+      sha256 "5dc1e9cd1d1249cfc7a1870b7a2c0a7d62dd2d12e76620578f0fb9182cea56b0"
     else
-      url "https://github.com/ChilliCream/graphql-platform/releases/download/16.0.0-p.8.6/nitro-osx-x64.zip"
-      sha256 "e5c474eca05f2f6d2fdcc71278fd436f8dcc30f70e598efe816abbd1b61a7026"
+      url "https://github.com/ChilliCream/graphql-platform/releases/download/16.0.0-p.8.7/nitro-osx-x64.zip"
+      sha256 "2f70de697d79c80746f504eeefc342f218af02348715560095d46baf8a7f260f"
     end
   end
 
