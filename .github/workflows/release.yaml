@@ -1,0 +1,194 @@
+name: 🍺 Update Homebrew Tap
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to update to
+        required: true
+        type: string
+      is_stable:
+        description: Whether this version is a stable (X.Y.Z) release.
+        required: true
+        type: boolean
+      is_active_major:
+        description: Whether this version targets the top lane (version.major >= highest stable major).
+        required: true
+        type: boolean
+
+run-name: "🍺 Update to ${{ inputs.version }}"
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    env:
+      VERSION: ${{ inputs.version }}
+      IS_STABLE: ${{ inputs.is_stable }}
+      IS_ACTIVE_MAJOR: ${{ inputs.is_active_major }}
+
+    steps:
+      - name: 🔢 Parse major and derive flags
+        id: ctx
+        shell: bash
+        run: |
+          set -euo pipefail
+          MAJOR="${VERSION%%.*}"
+          if ! [[ "$MAJOR" =~ ^[0-9]+$ ]]; then
+            echo "::error::Cannot parse major from version '$VERSION'"
+            exit 1
+          fi
+          if [[ "$IS_STABLE" == "true" && "$IS_ACTIVE_MAJOR" == "true" ]]; then
+            IS_HIGHEST_STABLE_MAJOR=true
+          else
+            IS_HIGHEST_STABLE_MAJOR=false
+          fi
+          echo "MAJOR=$MAJOR" >> "$GITHUB_ENV"
+          echo "IS_HIGHEST_STABLE_MAJOR=$IS_HIGHEST_STABLE_MAJOR" >> "$GITHUB_ENV"
+          echo "major=$MAJOR" >> "$GITHUB_OUTPUT"
+
+      - name: ⬇️ Download release archives
+        run: |
+          set -euo pipefail
+          BASE="https://github.com/ChilliCream/graphql-platform/releases/download/${VERSION}"
+          curl -fL -o nitro-osx-arm64.zip "$BASE/nitro-osx-arm64.zip"
+          curl -fL -o nitro-osx-x64.zip "$BASE/nitro-osx-x64.zip"
+          curl -fL -o nitro-linux-arm64.tar.gz "$BASE/nitro-linux-arm64.tar.gz"
+          curl -fL -o nitro-linux-x64.tar.gz "$BASE/nitro-linux-x64.tar.gz"
+
+      - name: 🔢 Compute SHA256
+        run: |
+          {
+            echo "SHA_OSX_ARM64=$(sha256sum nitro-osx-arm64.zip | cut -d' ' -f1)"
+            echo "SHA_OSX_X64=$(sha256sum nitro-osx-x64.zip | cut -d' ' -f1)"
+            echo "SHA_LINUX_ARM64=$(sha256sum nitro-linux-arm64.tar.gz | cut -d' ' -f1)"
+            echo "SHA_LINUX_X64=$(sha256sum nitro-linux-x64.tar.gz | cut -d' ' -f1)"
+          } >> "$GITHUB_ENV"
+
+      - name: 📥 Checkout tap
+        uses: actions/checkout@v6
+
+      - name: 📝 Generate formulas
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p Formula
+
+          write_formula() {
+            local name="$1"           # e.g. nitro-cli@17
+            local livecheck_mode="$2" # none | latest | major
+            local cls
+            cls=$(perl -pe 's/^(.)/\U$1/; s/[-_.\s]([a-zA-Z0-9])/\U$1/g; y/+/x/; s/(.)\@(\d)/$1AT$2/' <<< "$name")
+            local out="Formula/${name}.rb"
+
+            local livecheck=""
+            case "$livecheck_mode" in
+              latest)
+                livecheck=$'\n  livecheck do\n    url :stable\n    strategy :github_latest\n  end\n'
+                ;;
+              major)
+                livecheck=$'\n  livecheck do\n    url :stable\n    strategy :github_releases\n    regex(/^('"${MAJOR}"$'\\.\\d+\\.\\d+)$/)\n  end\n'
+                ;;
+              none) ;;
+              *)
+                echo "::error::Unknown livecheck mode: ${livecheck_mode}"
+                exit 1
+                ;;
+            esac
+
+            cat > "$out" <<EOF
+          class ${cls} < Formula
+            desc "ChilliCream Nitro Command Line"
+            homepage "https://chillicream.com"
+            version "${VERSION}"
+            license "MIT"
+          ${livecheck}
+            on_macos do
+              on_arm do
+                url "https://github.com/ChilliCream/graphql-platform/releases/download/${VERSION}/nitro-osx-arm64.zip"
+                sha256 "${SHA_OSX_ARM64}"
+              end
+              on_intel do
+                url "https://github.com/ChilliCream/graphql-platform/releases/download/${VERSION}/nitro-osx-x64.zip"
+                sha256 "${SHA_OSX_X64}"
+              end
+            end
+
+            on_linux do
+              on_arm do
+                url "https://github.com/ChilliCream/graphql-platform/releases/download/${VERSION}/nitro-linux-arm64.tar.gz"
+                sha256 "${SHA_LINUX_ARM64}"
+              end
+              on_intel do
+                url "https://github.com/ChilliCream/graphql-platform/releases/download/${VERSION}/nitro-linux-x64.tar.gz"
+                sha256 "${SHA_LINUX_X64}"
+              end
+            end
+
+            def install
+              bin.install "nitro"
+            end
+
+            test do
+              assert_match version.to_s, shell_output("#{bin}/nitro --version")
+            end
+          end
+          EOF
+            echo "Wrote $out"
+          }
+
+          # Stable: per-version pin + major-band tracker.
+          if [ "$IS_STABLE" = "true" ]; then
+            write_formula "nitro-cli@${VERSION}" "none"
+            write_formula "nitro-cli@${MAJOR}" "major"
+          fi
+
+          # Stable highest: also rewrite the unversioned formula.
+          if [ "$IS_HIGHEST_STABLE_MAJOR" = "true" ]; then
+            write_formula "nitro-cli" "latest"
+          fi
+
+          # Active-major prerelease: rewrite the @preview channel.
+          if [ "$IS_STABLE" != "true" ] && [ "$IS_ACTIVE_MAJOR" = "true" ]; then
+            write_formula "nitro-cli@preview" "none"
+          fi
+
+      - name: 📤 Commit (verified)
+        id: commit
+        uses: ChilliCream/create-signed-commit@75b38ccd01b93548dd2fa458e533b62015ecf35c
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          commit_message: "🍺 Update nitro-cli to ${{ inputs.version }}"
+
+      - name: 🏷️ Tag full version
+        uses: ChilliCream/create-signed-tag@28005302dd79bafbecdb0ad7c1daf2de2b795a39
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: v${{ inputs.version }}
+          sha: ${{ steps.commit.outputs.sha || github.sha }}
+
+      - name: 🏷️ Tag major version
+        if: inputs.is_stable
+        uses: ChilliCream/create-signed-tag@28005302dd79bafbecdb0ad7c1daf2de2b795a39
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: v${{ steps.ctx.outputs.major }}
+          sha: ${{ steps.commit.outputs.sha || github.sha }}
+
+      - name: 🚀 Create GitHub release
+        if: inputs.is_stable
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          TAG="v${VERSION}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists. Skipping creation."
+            exit 0
+          fi
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --verify-tag
