@@ -1,13 +1,8 @@
-class NitroCli < Formula
+class NitroCliAT1608 < Formula
   desc "ChilliCream Nitro Command Line"
   homepage "https://chillicream.com"
   version "16.0.8"
   license "MIT"
-
-  livecheck do
-    url :stable
-    strategy :github_latest
-  end
 
   on_macos do
     on_arm do
