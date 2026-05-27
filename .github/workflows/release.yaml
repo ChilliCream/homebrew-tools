@@ -164,7 +164,7 @@ jobs:
           commit_message: "🍺 Update nitro-cli to ${{ inputs.version }}"
 
       - name: 🏷️ Tag full version
-        uses: ChilliCream/create-signed-tag@28005302dd79bafbecdb0ad7c1daf2de2b795a39
+        uses: ChilliCream/create-signed-tag@24bafb9fd5822a93e780cc9da658f79a78392862
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           tag: v${{ inputs.version }}
@@ -172,7 +172,7 @@ jobs:
 
       - name: 🏷️ Tag major version
         if: inputs.is_stable
-        uses: ChilliCream/create-signed-tag@28005302dd79bafbecdb0ad7c1daf2de2b795a39
+        uses: ChilliCream/create-signed-tag@24bafb9fd5822a93e780cc9da658f79a78392862
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           tag: v${{ steps.ctx.outputs.major }}
