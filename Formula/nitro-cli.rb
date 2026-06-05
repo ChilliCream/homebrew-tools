@@ -1,7 +1,7 @@
 class NitroCli < Formula
   desc "ChilliCream Nitro Command Line"
   homepage "https://chillicream.com"
-  version "16.1.2"
+  version "16.1.3"
   license "MIT"
 
   livecheck do
@@ -11,23 +11,23 @@ class NitroCli < Formula
 
   on_macos do
     on_arm do
-      url "https://github.com/ChilliCream/graphql-platform/releases/download/16.1.2/nitro-osx-arm64.zip"
-      sha256 "3bf5110fdee9749cb7e849eff4a986b78ad8b562381e971b3c93e2d1e751336f"
+      url "https://github.com/ChilliCream/graphql-platform/releases/download/16.1.3/nitro-osx-arm64.zip"
+      sha256 "670bc19d419c2cad8a062b1d7f723bc89a201d980dd8fd9e8adf5ab43b58da75"
     end
     on_intel do
-      url "https://github.com/ChilliCream/graphql-platform/releases/download/16.1.2/nitro-osx-x64.zip"
-      sha256 "548d96db5d91c85f883ebc35e275ecc9fbc497e78b439ca5eb4ce60b505f0c13"
+      url "https://github.com/ChilliCream/graphql-platform/releases/download/16.1.3/nitro-osx-x64.zip"
+      sha256 "efab7eb56340c0da461865ceef3bb9e5c8bd95f0cffecca7c7963f1322930409"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/ChilliCream/graphql-platform/releases/download/16.1.2/nitro-linux-arm64.tar.gz"
-      sha256 "a400b4cf367a0a39db435e779cdefccdabd76ba5fcbae467ede30bbd1f8e6c28"
+      url "https://github.com/ChilliCream/graphql-platform/releases/download/16.1.3/nitro-linux-arm64.tar.gz"
+      sha256 "355de707e19a9a05bc552cb34521a69740780bd67bff0830545b1b5e5ef66cde"
     end
     on_intel do
-      url "https://github.com/ChilliCream/graphql-platform/releases/download/16.1.2/nitro-linux-x64.tar.gz"
-      sha256 "5957f53ed3b1ecc365dac048aca250e8399cb863837dd93baebb06185ff80bb4"
+      url "https://github.com/ChilliCream/graphql-platform/releases/download/16.1.3/nitro-linux-x64.tar.gz"
+      sha256 "32aea56039de55856557619e3081d7873816000bc3b3f0166f63a2acf8a49312"
     end
   end
 
