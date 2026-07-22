@@ -1,14 +1,8 @@
-class NitroCliAT16 < Formula
+class NitroCliAT1651 < Formula
   desc "ChilliCream Nitro Command Line"
   homepage "https://chillicream.com"
   version "16.5.1"
   license "MIT"
-
-  livecheck do
-    url :stable
-    strategy :github_releases
-    regex(/^(16\.\d+\.\d+)$/)
-  end
 
   on_macos do
     on_arm do
