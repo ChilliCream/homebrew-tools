@@ -1,0 +1,105 @@
+name: 🍎 Update Cider formula
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Cider version to update to (bare semver, e.g. 0.7.0).
+        required: true
+        type: string
+      is_stable:
+        description: Whether this version is a stable (X.Y.Z) release.
+        required: true
+        type: boolean
+
+run-name: "🍎 Update cider to ${{ inputs.version }}"
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    env:
+      VERSION: ${{ inputs.version }}
+      IS_STABLE: ${{ inputs.is_stable }}
+
+    steps:
+      - name: ⬇️ Download release archive
+        run: |
+          set -euo pipefail
+          curl -fL -o cider-osx-arm64.zip \
+            "https://github.com/ChilliCream/cider/releases/download/${VERSION}/cider-osx-arm64.zip"
+
+      - name: 🔢 Compute SHA256
+        run: |
+          set -euo pipefail
+          echo "SHA_OSX_ARM64=$(sha256sum cider-osx-arm64.zip | cut -d' ' -f1)" >> "$GITHUB_ENV"
+
+      - name: 📥 Checkout tap
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: 📝 Generate formula
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p Formula
+
+          write_formula() {
+            local name="$1"           # cider | cider-preview
+            local cls="$2"            # Cider | CiderPreview
+            local livecheck_mode="$3" # none | latest
+            local out="Formula/${name}.rb"
+
+            local version_line=""
+            if [ "$IS_STABLE" != "true" ]; then
+              version_line=$'\n  version "'"${VERSION}"'"'
+            fi
+
+            local livecheck=""
+            case "$livecheck_mode" in
+              latest)
+                livecheck=$'\n  livecheck do\n    url :stable\n    strategy :github_latest\n  end\n'
+                ;;
+              none) ;;
+              *)
+                echo "::error::Unknown livecheck mode: ${livecheck_mode}"
+                exit 1
+                ;;
+            esac
+
+            cat > "$out" <<EOF
+          class ${cls} < Formula
+            desc "Docker Engine API daemon on top of Apple container"
+            homepage "https://github.com/ChilliCream/cider"
+            url "https://github.com/ChilliCream/cider/releases/download/${VERSION}/cider-osx-arm64.zip"${version_line}
+            sha256 "${SHA_OSX_ARM64}"
+            license "MIT"
+          ${livecheck}
+            depends_on arch: :arm64
+            depends_on macos: :tahoe
+
+            def install
+              bin.install "cider"
+            end
+
+            test do
+              assert_match version.to_s, shell_output("#{bin}/cider version")
+            end
+          end
+          EOF
+            echo "Wrote $out"
+          }
+
+          if [ "$IS_STABLE" = "true" ]; then
+            write_formula "cider" "Cider" "latest"
+          else
+            write_formula "cider-preview" "CiderPreview" "none"
+          fi
+
+      - name: 📤 Commit (verified)
+        uses: ChilliCream/create-signed-commit@75b38ccd01b93548dd2fa458e533b62015ecf35c
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          commit_message: "🍎 Update cider to ${{ inputs.version }}"
