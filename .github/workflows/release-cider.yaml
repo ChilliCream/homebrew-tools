@@ -79,6 +79,8 @@ jobs:
             license "MIT"
           ${livecheck}
             depends_on arch: :arm64
+            depends_on "docker"
+            depends_on "docker-compose"
             depends_on macos: :tahoe
 
             conflicts_with "${conflicts}", because: "both install the cider binary"
