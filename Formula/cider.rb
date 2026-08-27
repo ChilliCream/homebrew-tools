@@ -15,8 +15,6 @@ class Cider < Formula
   depends_on "docker-compose"
   depends_on macos: :tahoe
 
-  conflicts_with "cider-preview", because: "both install the cider binary"
-
   def install
     bin.install "cider"
   end

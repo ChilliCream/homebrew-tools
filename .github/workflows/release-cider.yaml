@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       is_stable:
-        description: Whether this version is a stable (X.Y.Z) release.
+        description: Accepted for dispatch compatibility; ignored. Cider ships release packages only.
         required: true
         type: boolean
 
@@ -23,7 +23,6 @@ jobs:
 
     env:
       VERSION: ${{ inputs.version }}
-      IS_STABLE: ${{ inputs.is_stable }}
 
     steps:
       - name: ⬇️ Download release archive
@@ -47,43 +46,25 @@ jobs:
           mkdir -p Formula
 
           write_formula() {
-            local name="$1"           # cider | cider-preview
-            local cls="$2"            # Cider | CiderPreview
-            local livecheck_mode="$3" # none | latest
-            local conflicts="$4"      # the other formula
-            local out="Formula/${name}.rb"
-
-            local version_line=""
-            if [ "$IS_STABLE" != "true" ]; then
-              version_line=$'\n  version "'"${VERSION}"'"'
-            fi
-
-            local livecheck=""
-            case "$livecheck_mode" in
-              latest)
-                livecheck=$'\n  livecheck do\n    url :stable\n    strategy :github_latest\n  end\n'
-                ;;
-              none) ;;
-              *)
-                echo "::error::Unknown livecheck mode: ${livecheck_mode}"
-                exit 1
-                ;;
-            esac
+            local out="Formula/cider.rb"
 
             cat > "$out" <<EOF
-          class ${cls} < Formula
+          class Cider < Formula
             desc "Docker Engine API daemon on top of Apple container"
             homepage "https://github.com/ChilliCream/cider"
-            url "https://github.com/ChilliCream/cider/releases/download/${VERSION}/cider-osx-arm64.zip"${version_line}
+            url "https://github.com/ChilliCream/cider/releases/download/${VERSION}/cider-osx-arm64.zip"
             sha256 "${SHA_OSX_ARM64}"
             license "MIT"
-          ${livecheck}
+
+            livecheck do
+              url :stable
+              strategy :github_latest
+            end
+
             depends_on arch: :arm64
             depends_on "docker"
             depends_on "docker-compose"
             depends_on macos: :tahoe
-
-            conflicts_with "${conflicts}", because: "both install the cider binary"
 
             def install
               bin.install "cider"
@@ -97,11 +78,7 @@ jobs:
             echo "Wrote $out"
           }
 
-          if [ "$IS_STABLE" = "true" ]; then
-            write_formula "cider" "Cider" "latest" "cider-preview"
-          else
-            write_formula "cider-preview" "CiderPreview" "none" "cider"
-          fi
+          write_formula
 
       - name: 📤 Commit (verified)
         uses: ChilliCream/create-signed-commit@75b38ccd01b93548dd2fa458e533b62015ecf35c
