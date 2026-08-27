@@ -1,8 +1,8 @@
 class Cider < Formula
   desc "Docker Engine API daemon on top of Apple container"
   homepage "https://github.com/ChilliCream/cider"
-  url "https://github.com/ChilliCream/cider/releases/download/0.1.4/cider-osx-arm64.zip"
-  sha256 "8fe8e4040bfef4467b2966590a9a3830d71d1fc3d067a02705a97f6ff2c85061"
+  url "https://github.com/ChilliCream/cider/releases/download/0.2.0/cider-osx-arm64.zip"
+  sha256 "b329c419deb4ba45111674a362c1a6d658d64ac1e61de37b59eae3eb9fecb911"
   license "MIT"
 
   livecheck do
